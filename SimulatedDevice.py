@@ -17,10 +17,10 @@ from azure.iot.device import IoTHubDeviceClient, Message
 # The device connection string to authenticate the device with your IoT hub.
 # Using the Azure CLI:
 # az iot hub device-identity show-connection-string --hub-name {YourIoTHubName} --device-id MyNodeDevice --output table
-CONNECTION_STRING = "HostName=msa-learn-iot.azure-devices.net;DeviceId=MyPythonDevice;SharedAccessKey=Neur/u5E1oMet4cm3Q4GQ3sK47UDsGQZ2a+zWphMjN4=+zWphMjN4="
+CONNECTION_STRING = "HostName=msa-learn-iot.azure-devices.net;DeviceId=MyPythonDevice;SharedAccessKey=Neur/u5E1oMet4cm3Q4GQ3sK47UDsGQZ2a+zWphMjN4="
 
 # Define the JSON message to send to IoT Hub.
-MSG_TXT = '{{"temperature": {temperature},"weather": {weather},"precipitation": {precipitation},"humidity": {humidity},"wind": {wind}}}'
+MSG_TXT = '{{ "temperature": {temperature},"precipitation": {precipitation},"humidity": {humidity},"wind": {wind},}}'
 
 # Location to get Sydney weather data
 URL = "https://www.google.com/search?q=weather+sydney"
@@ -40,8 +40,8 @@ def get_weather_data(url):
     soup = bs(page.text, "html.parser")
     # Store extracted weather data in dictionary
     data = {}
-    # Get current weather
-    data['weather'] = soup.find("span", attrs={"id": "wob_dc"}).text
+    # Get current temperature
+    data['temperature'] = soup.find("span", attrs={"id": "wob_tm"}).text
     # Get current precipitation
     data['precipitation'] = soup.find("span", attrs={"id": "wob_pp"}).text
     # Get current humidity
@@ -60,17 +60,15 @@ def send_weather_data():
             data = get_weather_data(URL)
 
             # Build the message with simulated telemetry values.
-            temperature = data['temperature']
-            weather = data['weather']
-            precipitation = data['precipitation']
-            humidity = data['humidity']
-            wind = data['wind']
-            msg_txt_formatted = MSG_TXT.format(temperature=temperature, weather=weather, precipitation=precipitation, humidity=humidity, wind=wind)
+            temperature = int(data['temperature'])
+            precipitation = int(data['precipitation'].strip('%'))
+            humidity = int(data['humidity'].strip('%'))
+            wind = int(data['wind'].strip(' km/h'))
+            msg_txt_formatted = MSG_TXT.format(temperature=temperature, precipitation=precipitation, humidity=humidity, wind=wind)
             message = Message(msg_txt_formatted)
-
             # Add a custom application property to the message.
             # An IoT hub can filter on these properties without access to the message body.
-            if temperature > 35: # High temperature warning
+            if int(temperature) > 35: # High temperature warning
               message.custom_properties["temperatureAlert"] = "true"
             else:
               message.custom_properties["temperatureAlert"] = "false"
@@ -79,7 +77,7 @@ def send_weather_data():
             print( "Sending message: {}".format(message) )
             client.send_message(message)
             print ( "Message successfully sent" )
-            time.sleep(60)
+            time.sleep(900)
 
     except KeyboardInterrupt:
         print ( "IoTHubClient sample stopped" )

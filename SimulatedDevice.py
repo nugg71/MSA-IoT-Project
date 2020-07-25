@@ -6,9 +6,8 @@ import time
 from bs4 import BeautifulSoup as bs
 import requests
 
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
-# US english
-LANGUAGE = "en-US,en;q=0.5"
+USR_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
+LANG = "en-AU,en;q=0.5"
 
 # Using the Python Device SDK for IoT Hub:
 #   https://github.com/Azure/azure-iot-sdk-python
@@ -33,7 +32,23 @@ def iothub_client_init():
 
 # Web scraper to collect Sydney weather data from google weather
 def get_weather_data(url):
-    # TO DO
+    session = requests.Session()
+    session.headers['User-Agent'] = USR_AGENT
+    session.headers['Accept-Language'] = LANG
+    session.headers['Content-Language'] = LANG
+    page = session.get(url)
+    soup = bs(page.text, "html.parser")
+    # Store extracted weather data in dictionary
+    data = {}
+    # Get current weather
+    data['weather'] = soup.find("span", attrs={"id": "wob_dc"}).text
+    # Get current precipitation
+    data['precipitation'] = soup.find("span", attrs={"id": "wob_pp"}).text
+    # Get current humidity
+    data['humidity'] = soup.find("span", attrs={"id": "wob_hm"}).text
+    # Get current wind speed
+    data['wind'] = soup.find("span", attrs={"id": "wob_ws"}).text
+    return data
 
 def send_weather_data():
     try:
@@ -55,7 +70,7 @@ def send_weather_data():
 
             # Add a custom application property to the message.
             # An IoT hub can filter on these properties without access to the message body.
-            if temperature > 35:
+            if temperature > 35: # High temperature warning
               message.custom_properties["temperatureAlert"] = "true"
             else:
               message.custom_properties["temperatureAlert"] = "false"
@@ -64,7 +79,7 @@ def send_weather_data():
             print( "Sending message: {}".format(message) )
             client.send_message(message)
             print ( "Message successfully sent" )
-            time.sleep(300)
+            time.sleep(60)
 
     except KeyboardInterrupt:
         print ( "IoTHubClient sample stopped" )

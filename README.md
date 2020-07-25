@@ -1,2 +1,1 @@
-# MSA-IoT-Project
- 
+# MSA-IoT-Project - Sydney temperature

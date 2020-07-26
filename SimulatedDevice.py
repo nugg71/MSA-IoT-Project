@@ -77,7 +77,7 @@ def send_weather_data():
             print( "Sending message: {}".format(message) )
             client.send_message(message)
             print ( "Message successfully sent" )
-            time.sleep(900)
+            time.sleep(600)
 
     except KeyboardInterrupt:
         print ( "IoTHubClient sample stopped" )
